@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
+<title>TURBO KICK — Car Soccer</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Exo+2:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --neon:#00f5ff;--neon2:#ff3cac;--gold:#ffd700;--bg:#050a14;--panel:#0d1b2a;
+  --green:#0a2a10;--line:rgba(255,255,255,0.12);
+}
+body{background:var(--bg);font-family:'Exo 2',sans-serif;overflow:hidden;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;}
+
+/* ===== SCREENS ===== */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s,transform .5s;}
+.screen.hidden{opacity:0;pointer-events:none;transform:scale(1.04);}
+
+/* ===== LOADING SCREEN ===== */
+#loadScreen{background:var(--bg);z-index:100;}
+.load-logo{font-family:'Bebas Neue',sans-serif;font-size:clamp(3rem,10vw,7rem);color:#fff;letter-spacing:.1em;text-shadow:0 0 40px var(--neon),0 0 80px var(--neon2);animation:pulse 2s ease-in-out infinite;}
+.load-sub{color:var(--neon);font-size:clamp(.8rem,2vw,1.1rem);letter-spacing:.4em;text-transform:uppercase;margin-bottom:3rem;opacity:.7;}
+.load-bar-wrap{width:clamp(200px,50vw,400px);height:6px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden;}
+.load-bar{height:100%;width:0;background:linear-gradient(90deg,var(--neon),var(--neon2));border-radius:99px;transition:width .05s linear;}
+.load-pct{color:#fff;font-size:.9rem;margin-top:.6rem;opacity:.5;letter-spacing:.2em;}
+.car-animation{margin-bottom:2rem;font-size:3rem;animation:carDrive 1.5s ease-in-out infinite;}
+@keyframes pulse{0%,100%{text-shadow:0 0 40px var(--neon),0 0 80px var(--neon2);}50%{text-shadow:0 0 80px var(--neon),0 0 160px var(--neon2),0 0 200px #fff;}}
+@keyframes carDrive{0%,100%{transform:translateX(-10px) rotate(-3deg);}50%{transform:translateX(10px) rotate(3deg);}}
+
+/* ===== MAIN MENU ===== */
+#menuScreen{background:radial-gradient(ellipse at 30% 50%,#0a2030 0%,var(--bg) 70%);}
+.menu-bg-lines{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.menu-bg-lines::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 60px,rgba(0,245,255,.04) 60px,rgba(0,245,255,.04) 61px),repeating-linear-gradient(0deg,transparent,transparent 60px,rgba(0,245,255,.04) 60px,rgba(0,245,255,.04) 61px);}
+.menu-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(3.5rem,12vw,8rem);color:#fff;letter-spacing:.05em;text-shadow:0 0 60px var(--neon);line-height:1;text-align:center;margin-bottom:.2rem;position:relative;z-index:1;}
+.menu-title span{color:var(--neon);}
+.menu-sub{color:var(--neon2);font-size:clamp(.7rem,2.5vw,1rem);letter-spacing:.5em;text-transform:uppercase;margin-bottom:3rem;position:relative;z-index:1;}
+.menu-btn{display:block;width:clamp(220px,60vw,340px);margin:.5rem auto;padding:1rem 2rem;background:transparent;border:2px solid rgba(0,245,255,.3);color:#fff;font-family:'Exo 2',sans-serif;font-size:clamp(.9rem,2.5vw,1.1rem);font-weight:700;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;border-radius:4px;position:relative;z-index:1;transition:all .2s;text-align:center;}
+.menu-btn:hover,.menu-btn:active{background:rgba(0,245,255,.1);border-color:var(--neon);color:var(--neon);box-shadow:0 0 20px rgba(0,245,255,.3);transform:translateX(5px);}
+.menu-btn.primary{background:linear-gradient(135deg,var(--neon2),#7b2ff7);border-color:transparent;font-size:clamp(1.1rem,3vw,1.4rem);padding:1.2rem 3rem;letter-spacing:.3em;box-shadow:0 0 30px rgba(255,60,172,.4);}
+.menu-btn.primary:hover{transform:scale(1.05);box-shadow:0 0 50px rgba(255,60,172,.7);}
+.score-badge{position:absolute;top:1rem;right:1rem;background:rgba(0,245,255,.1);border:1px solid var(--neon);padding:.5rem 1rem;border-radius:4px;font-size:.8rem;color:var(--neon);letter-spacing:.1em;}
+
+/* ===== MODE SELECT SCREENS ===== */
+#aiScreen,#pvpScreen,#rankedScreen{background:radial-gradient(ellipse at center,#0a1a2a,var(--bg));}
+.mode-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(2rem,7vw,4rem);color:#fff;letter-spacing:.1em;text-align:center;margin-bottom:.5rem;position:relative;z-index:1;}
+.mode-title span{color:var(--neon2);}
+.mode-desc{color:rgba(255,255,255,.4);font-size:clamp(.7rem,2vw,.9rem);letter-spacing:.2em;text-align:center;margin-bottom:2rem;position:relative;z-index:1;}
+.mode-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:.8rem;max-width:700px;position:relative;z-index:1;}
+.mode-card{flex:1;min-width:clamp(100px,25vw,140px);max-width:160px;padding:1.2rem .8rem;background:var(--panel);border:2px solid rgba(255,255,255,.08);border-radius:8px;cursor:pointer;transition:all .2s;text-align:center;}
+.mode-card:hover,.mode-card:active{border-color:var(--neon);background:rgba(0,245,255,.07);transform:translateY(-4px);box-shadow:0 8px 30px rgba(0,245,255,.2);}
+.mode-card.selected{border-color:var(--neon2);background:rgba(255,60,172,.1);}
+.mode-icon{font-size:2rem;margin-bottom:.5rem;}
+.mode-name{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:#fff;letter-spacing:.1em;}
+.mode-tag{font-size:.65rem;color:rgba(255,255,255,.4);margin-top:.2rem;text-transform:uppercase;letter-spacing:.1em;}
+.rank-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;max-width:600px;position:relative;z-index:1;}
+.rank-card{padding:.8rem .5rem;background:var(--panel);border:2px solid rgba(255,255,255,.06);border-radius:6px;cursor:pointer;transition:all .2s;text-align:center;}
+.rank-card:hover,.rank-card:active{transform:translateY(-3px);}
+.rank-card.bronze{border-color:#cd7f32aa;}
+.rank-card.bronze:hover{border-color:#cd7f32;background:rgba(205,127,50,.1);box-shadow:0 4px 20px rgba(205,127,50,.2);}
+.rank-card.silver{border-color:#c0c0c0aa;}
+.rank-card.silver:hover{border-color:#c0c0c0;background:rgba(192,192,192,.1);}
+.rank-card.gold{border-color:#ffd700aa;}
+.rank-card.gold:hover{border-color:#ffd700;background:rgba(255,215,0,.1);}
+.rank-card.platinum{border-color:#00f5ffaa;}
+.rank-card.platinum:hover{border-color:#00f5ff;background:rgba(0,245,255,.1);}
+.rank-card.diamond{border-color:#b9f2ffaa;}
+.rank-card.diamond:hover{border-color:#b9f2ff;background:rgba(185,242,255,.15);box-shadow:0 4px 20px rgba(185,242,255,.3);}
+.rank-icon{font-size:1.6rem;margin-bottom:.3rem;}
+.rank-name{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:.1em;}
+.rank-desc{font-size:.6rem;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.05em;}
+.back-btn{position:absolute;top:1rem;left:1rem;background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.5);font-family:'Exo 2',sans-serif;font-size:.8rem;letter-spacing:.2em;padding:.5rem 1rem;border-radius:4px;cursor:pointer;z-index:10;transition:all .2s;}
+.back-btn:hover{border-color:#fff;color:#fff;}
+.start-game-btn{margin-top:1.5rem;padding:1rem 3rem;background:linear-gradient(135deg,var(--neon2),#7b2ff7);border:none;color:#fff;font-family:'Exo 2',sans-serif;font-size:clamp(.9rem,2.5vw,1.1rem);font-weight:900;letter-spacing:.3em;text-transform:uppercase;cursor:pointer;border-radius:4px;box-shadow:0 0 30px rgba(255,60,172,.4);transition:all .2s;position:relative;z-index:1;}
+.start-game-btn:hover{transform:scale(1.05);box-shadow:0 0 50px rgba(255,60,172,.7);}
+.pvp-info{color:rgba(255,255,255,.5);font-size:clamp(.7rem,2vw,.85rem);text-align:center;margin-top:1rem;line-height:1.8;position:relative;z-index:1;}
+.pvp-info span{color:var(--neon);font-weight:700;}
+
+/* ===== GAME SCREEN ===== */
+#gameScreen{background:var(--bg);flex-direction:column;gap:0;}
+#gameCanvas{display:block;max-width:100vw;max-height:calc(100vh - 100px);touch-action:none;}
+#hud{width:100%;max-width:900px;display:flex;align-items:center;justify-content:space-between;padding:.5rem 1rem;background:rgba(0,0,0,.5);border-bottom:1px solid rgba(255,255,255,.05);}
+.hud-score{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.5rem,5vw,2.5rem);color:#fff;letter-spacing:.1em;}
+.hud-score .lbl{font-size:.5em;color:rgba(255,255,255,.4);display:block;line-height:1;letter-spacing:.2em;}
+.hud-center{text-align:center;}
+.hud-mode{font-size:clamp(.6rem,1.8vw,.8rem);color:var(--neon);letter-spacing:.2em;text-transform:uppercase;opacity:.7;}
+.hud-rank{font-family:'Bebas Neue',sans-serif;font-size:1rem;color:var(--gold);letter-spacing:.1em;}
+.hud-exit{background:transparent;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.4);font-family:'Exo 2',sans-serif;font-size:.7rem;letter-spacing:.2em;padding:.4rem .8rem;border-radius:4px;cursor:pointer;transition:all .2s;}
+.hud-exit:hover{border-color:#ff3333;color:#ff3333;}
+
+/* ===== MOBILE CONTROLS ===== */
+#mobileControls{display:none;position:fixed;bottom:0;left:0;right:0;height:180px;pointer-events:none;z-index:50;}
+.dpad{position:absolute;bottom:20px;pointer-events:all;}
+.dpad.left-pad{left:20px;}
+.dpad.right-pad{right:20px;}
+.dpad-btn{width:55px;height:55px;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;cursor:pointer;user-select:none;-webkit-user-select:none;transition:background .1s;position:absolute;}
+.dpad-btn:active,.dpad-btn.pressed{background:rgba(0,245,255,.3);border-color:var(--neon);}
+.dpad-up{top:0;left:55px;}
+.dpad-down{top:110px;left:55px;}
+.dpad-left{top:55px;left:0;}
+.dpad-right{top:55px;left:110px;}
+
+/* ===== GOAL OVERLAY ===== */
+#goalOverlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:200;opacity:0;pointer-events:none;transition:opacity .3s;}
+#goalOverlay.show{opacity:1;}
+.goal-text{font-family:'Bebas Neue',sans-serif;font-size:clamp(4rem,15vw,9rem);color:#fff;text-shadow:0 0 60px var(--neon2),0 0 120px var(--neon2);animation:goalPop .4s ease-out;letter-spacing:.1em;}
+.goal-scorer{font-size:clamp(.9rem,3vw,1.4rem);color:var(--neon);letter-spacing:.3em;text-transform:uppercase;margin-top:-.5rem;}
+@keyframes goalPop{0%{transform:scale(.3);opacity:0;}70%{transform:scale(1.15);}100%{transform:scale(1);opacity:1;}}
+
+/* ===== SAVE UI ===== */
+#savePanel{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);background:var(--panel);border:1px solid rgba(0,245,255,.2);border-radius:8px 8px 0 0;padding:1rem 1.5rem;z-index:300;transition:transform .3s;min-width:300px;max-width:90vw;}
+#savePanel.open{transform:translateX(-50%) translateY(0);}
+#savePanel h3{font-family:'Bebas Neue',sans-serif;color:var(--neon);letter-spacing:.1em;margin-bottom:.8rem;}
+#savePanel input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:#fff;padding:.5rem;border-radius:4px;font-family:'Exo 2',sans-serif;font-size:.85rem;margin-bottom:.5rem;}
+.save-btns{display:flex;gap:.5rem;}
+.save-btns button{flex:1;padding:.5rem;background:rgba(0,245,255,.1);border:1px solid var(--neon);color:var(--neon);font-family:'Exo 2',sans-serif;font-size:.8rem;letter-spacing:.1em;cursor:pointer;border-radius:4px;transition:background .2s;}
+.save-btns button:hover{background:rgba(0,245,255,.25);}
+.save-toggle{position:fixed;bottom:1rem;right:1rem;z-index:301;background:rgba(0,245,255,.1);border:1px solid var(--neon);color:var(--neon);font-family:'Exo 2',sans-serif;font-size:.75rem;letter-spacing:.1em;padding:.4rem .8rem;border-radius:4px;cursor:pointer;display:none;}
+</style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div id="loadScreen" class="screen">
+  <div class="car-animation">🏎️</div>
+  <div class="load-logo">TURBO KICK</div>
+  <div class="load-sub">Car Soccer • Arcade Edition</div>
+  <div class="load-bar-wrap"><div class="load-bar" id="loadBar"></div></div>
+  <div class="load-pct" id="loadPct">0%</div>
+</div>
+
+<!-- MAIN MENU -->
+<div id="menuScreen" class="screen hidden">
+  <div class="menu-bg-lines"></div>
+  <div class="score-badge" id="menuScoreBadge">⚽ GOALS: 0</div>
+  <div class="menu-title">TURBO<br><span>KICK</span></div>
+  <div class="menu-sub">Car Soccer Arcade</div>
+  <button class="menu-btn primary" onclick="showScreen('modeScreen')">▶ PLAY!</button>
+  <button class="menu-btn" onclick="toggleSavePanel()">💾 Save / Load</button>
+</div>
+
+<!-- MODE SELECT -->
+<div id="modeScreen" class="screen hidden">
+  <button class="back-btn" onclick="showScreen('menuScreen')">← BACK</button>
+  <div class="mode-title">SELECT <span>MODE</span></div>
+  <div class="mode-desc">Choose your game mode</div>
+  <div class="mode-grid">
+    <div class="mode-card" onclick="showScreen('aiScreen')">
+      <div class="mode-icon">🤖</div>
+      <div class="mode-name">VS AI</div>
+      <div class="mode-tag">Solo vs Bot</div>
+    </div>
+    <div class="mode-card" onclick="showScreen('pvpScreen')">
+      <div class="mode-icon">⚔️</div>
+      <div class="mode-name">1v1</div>
+      <div class="mode-tag">Local Coop</div>
+    </div>
+    <div class="mode-card" onclick="showScreen('rankedScreen')">
+      <div class="mode-icon">🏆</div>
+      <div class="mode-name">RANKED</div>
+      <div class="mode-tag">Climb the Ladder</div>
+    </div>
+  </div>
+</div>
+
+<!-- AI MODE SELECT -->
+<div id="aiScreen" class="screen hidden">
+  <button class="back-btn" onclick="showScreen('modeScreen')">← BACK</button>
+  <div class="mode-title">VS <span>AI</span></div>
+  <div class="mode-desc">Select AI difficulty</div>
+  <div class="mode-grid" id="aiCards">
+    <div class="mode-card" data-ai="noob" onclick="selectAI(this,'noob')">
+      <div class="mode-icon">🐣</div>
+      <div class="mode-name">NOOB</div>
+      <div class="mode-tag">Barely moves</div>
+    </div>
+    <div class="mode-card" data-ai="rookie" onclick="selectAI(this,'rookie')">
+      <div class="mode-icon">🌱</div>
+      <div class="mode-name">ROOKIE</div>
+      <div class="mode-tag">Learning the game</div>
+    </div>
+    <div class="mode-card" data-ai="intermediate" onclick="selectAI(this,'intermediate')">
+      <div class="mode-icon">⚡</div>
+      <div class="mode-name">INTERMEDIATE</div>
+      <div class="mode-tag">Decent challenge</div>
+    </div>
+    <div class="mode-card" data-ai="pro" onclick="selectAI(this,'pro')">
+      <div class="mode-icon">🔥</div>
+      <div class="mode-name">PRO</div>
+      <div class="mode-tag">Very tough</div>
+    </div>
+    <div class="mode-card" data-ai="unfair" onclick="selectAI(this,'unfair')">
+      <div class="mode-icon">👹</div>
+      <div class="mode-name">UNFAIR</div>
+      <div class="mode-tag">Pure chaos</div>
+    </div>
+  </div>
+  <button class="start-game-btn" onclick="startGame('ai')">START MATCH →</button>
+</div>
+
+<!-- PVP SCREEN -->
+<div id="pvpScreen" class="screen hidden">
+  <button class="back-btn" onclick="showScreen('modeScreen')">← BACK</button>
+  <div class="mode-title">1v1 <span>LOCAL</span></div>
+  <div class="mode-desc">Two players, same keyboard</div>
+  <div class="pvp-info">
+    <span>Player 1 🔵</span> — W A S D to drive<br>
+    <span>Player 2 🔴</span> — Arrow Keys to drive<br><br>
+    First to 5 goals wins!
+  </div>
+  <button class="start-game-btn" onclick="startGame('pvp')">START MATCH →</button>
+</div>
+
+<!-- RANKED SCREEN -->
+<div id="rankedScreen" class="screen hidden">
+  <button class="back-btn" onclick="showScreen('modeScreen')">← BACK</button>
+  <div class="mode-title">RANKED <span>MODE</span></div>
+  <div class="mode-desc" id="rankDesc">Select your starting rank</div>
+  <div class="rank-grid">
+    <div class="rank-card bronze" onclick="selectRank(this,'bronze',1,1)"><div class="rank-icon">🥉</div><div class="rank-name" style="color:#cd7f32">Bronze I</div><div class="rank-desc">AI Lvl 1</div></div>
+    <div class="rank-card bronze" onclick="selectRank(this,'bronze',2,2)"><div class="rank-icon">🥉</div><div class="rank-name" style="color:#cd7f32">Bronze II</div><div class="rank-desc">AI Lvl 2</div></div>
+    <div class="rank-card bronze" onclick="selectRank(this,'bronze',3,3)"><div class="rank-icon">🥉</div><div class="rank-name" style="color:#cd7f32">Bronze III</div><div class="rank-desc">AI Lvl 3</div></div>
+    <div class="rank-card silver" onclick="selectRank(this,'silver',1,4)"><div class="rank-icon">🥈</div><div class="rank-name" style="color:#c0c0c0">Silver I</div><div class="rank-desc">AI Lvl 4</div></div>
+    <div class="rank-card silver" onclick="selectRank(this,'silver',2,5)"><div class="rank-icon">🥈</div><div class="rank-name" style="color:#c0c0c0">Silver II</div><div class="rank-desc">AI Lvl 5</div></div>
+    <div class="rank-card silver" onclick="selectRank(this,'silver',3,6)"><div class="rank-icon">🥈</div><div class="rank-name" style="color:#c0c0c0">Silver III</div><div class="rank-desc">AI Lvl 6</div></div>
+    <div class="rank-card gold" onclick="selectRank(this,'gold',1,7)"><div class="rank-icon">🥇</div><div class="rank-name" style="color:#ffd700">Gold I</div><div class="rank-desc">AI Lvl 7</div></div>
+    <div class="rank-card gold" onclick="selectRank(this,'gold',2,8)"><div class="rank-icon">🥇</div><div class="rank-name" style="color:#ffd700">Gold II</div><div class="rank-desc">AI Lvl 8</div></div>
+    <div class="rank-card gold" onclick="selectRank(this,'gold',3,9)"><div class="rank-icon">🥇</div><div class="rank-name" style="color:#ffd700">Gold III</div><div class="rank-desc">AI Lvl 9</div></div>
+    <div class="rank-card platinum" onclick="selectRank(this,'platinum',1,10)"><div class="rank-icon">💠</div><div class="rank-name" style="color:#00f5ff">Platinum I</div><div class="rank-desc">AI Lvl 10</div></div>
+    <div class="rank-card platinum" onclick="selectRank(this,'platinum',2,11)"><div class="rank-icon">💠</div><div class="rank-name" style="color:#00f5ff">Platinum II</div><div class="rank-desc">AI Lvl 11</div></div>
+    <div class="rank-card platinum" onclick="selectRank(this,'platinum',3,12)"><div class="rank-icon">💠</div><div class="rank-name" style="color:#00f5ff">Platinum III</div><div class="rank-desc">AI Lvl 12</div></div>
+    <div class="rank-card diamond" onclick="selectRank(this,'diamond',1,13)"><div class="rank-icon">💎</div><div class="rank-name" style="color:#b9f2ff">Diamond I</div><div class="rank-desc">AI Lvl 13</div></div>
+    <div class="rank-card diamond" onclick="selectRank(this,'diamond',2,14)"><div class="rank-icon">💎</div><div class="rank-name" style="color:#b9f2ff">Diamond II</div><div class="rank-desc">AI Lvl 14</div></div>
+    <div class="rank-card diamond" onclick="selectRank(this,'diamond',3,15)"><div class="rank-icon">💎</div><div class="rank-name" style="color:#b9f2ff">Diamond III</div><div class="rank-desc">AI Lvl 15</div></div>
+  </div>
+  <button class="start-game-btn" onclick="startGame('ranked')">START RANKED →</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="gameScreen" class="screen hidden">
+  <div id="hud">
+    <div class="hud-score">
+      <span class="lbl">P1 🔵</span>
+      <span id="score1">0</span>
+    </div>
+    <div class="hud-center">
+      <div class="hud-mode" id="hudMode">VS AI</div>
+      <div class="hud-rank" id="hudRank"></div>
+    </div>
+    <div class="hud-score" style="text-align:right">
+      <span class="lbl">P2 🔴</span>
+      <span id="score2">0</span>
+    </div>
+  </div>
+  <canvas id="gameCanvas"></canvas>
+  <button class="hud-exit" onclick="exitGame()">✕ EXIT</button>
+</div>
+
+<!-- MOBILE D-PAD -->
+<div id="mobileControls">
+  <div class="dpad left-pad" id="p1pad" style="width:165px;height:165px;">
+    <div class="dpad-btn dpad-up" data-key="w">▲</div>
+    <div class="dpad-btn dpad-down" data-key="s">▼</div>
+    <div class="dpad-btn dpad-left" data-key="a">◀</div>
+    <div class="dpad-btn dpad-right" data-key="d">▶</div>
+  </div>
+  <div class="dpad right-pad" id="p2pad" style="width:165px;height:165px;display:none;">
+    <div class="dpad-btn dpad-up" data-key="ArrowUp">▲</div>
+    <div class="dpad-btn dpad-down" data-key="ArrowDown">▼</div>
+    <div class="dpad-btn dpad-left" data-key="ArrowLeft">◀</div>
+    <div class="dpad-btn dpad-right" data-key="ArrowRight">▶</div>
+  </div>
+</div>
+
+<!-- GOAL OVERLAY -->
+<div id="goalOverlay">
+  <div class="goal-text" id="goalText">GOAL!</div>
+  <div class="goal-scorer" id="goalScorer">Player 1 Scores!</div>
+</div>
+
+<!-- SAVE PANEL -->
+<div id="savePanel">
+  <h3>💾 SAVE SYSTEM</h3>
+  <input type="text" id="saveCode" placeholder="Paste save code here...">
+  <div class="save-btns">
+    <button onclick="generateSave()">Generate Code</button>
+    <button onclick="loadSave()">Load Code</button>
+    <button onclick="toggleSavePanel()">Close</button>
+  </div>
+</div>
+<button class="save-toggle" id="saveToggleBtn" onclick="toggleSavePanel()">💾 SAVE</button>
+
+<script>
+// ============================================
+//  GAME STATE
+// ============================================
+let gameMode = 'ai'; // 'ai', 'pvp', 'ranked'
+let aiDifficulty = 'intermediate';
+let rankedLevel = 7;
+let rankedTierName = 'Gold I';
+let stats = { goals: 0, rankedWins: 0, currentRank: 'Bronze I', rankLevel: 1 };
+let keys = {};
+let gameRunning = false;
+let animId = null;
+let goalTimeout = null;
+
+// ============================================
+//  LOADING SCREEN
+// ============================================
+let loadPct = 0;
+const loadInterval = setInterval(() => {
+  loadPct += Math.random() * 4 + 1;
+  if (loadPct >= 100) { loadPct = 100; clearInterval(loadInterval); setTimeout(() => showScreen('menuScreen'), 400); }
+  document.getElementById('loadBar').style.width = loadPct + '%';
+  document.getElementById('loadPct').textContent = Math.floor(loadPct) + '%';
+}, 60);
+
+// ============================================
+//  SCREEN MANAGEMENT
+// ============================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  if (id === 'menuScreen') {
+    updateMenuScore();
+    document.getElementById('saveToggleBtn').style.display = 'none';
+  }
+  if (id === 'gameScreen') {
+    document.getElementById('saveToggleBtn').style.display = 'block';
+  }
+}
+
+function updateMenuScore() {
+  document.getElementById('menuScoreBadge').textContent = `⚽ GOALS: ${stats.goals}`;
+}
+
+// ============================================
+//  DIFFICULTY / RANK SELECTION
+// ============================================
+function selectAI(el, diff) {
+  document.querySelectorAll('#aiCards .mode-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  aiDifficulty = diff;
+}
+// Default select intermediate
+setTimeout(() => {
+  const def = document.querySelector('[data-ai="intermediate"]');
+  if (def) def.classList.add('selected');
+}, 100);
+
+function selectRank(el, tier, num, level) {
+  document.querySelectorAll('.rank-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  rankedLevel = level;
+  rankedTierName = tier.charAt(0).toUpperCase() + tier.slice(1) + ' ' + ['I','II','III'][num-1];
+  document.getElementById('rankDesc').textContent = `Selected: ${rankedTierName} (AI Level ${level})`;
+}
+
+// ============================================
+//  START GAME
+// ============================================
+function startGame(mode) {
+  gameMode = mode;
+  showScreen('gameScreen');
+  document.getElementById('hudMode').textContent = mode === 'ai' ? 'VS AI — ' + aiDifficulty.toUpperCase() :
+    mode === 'pvp' ? '1v1 LOCAL' : 'RANKED — ' + rankedTierName;
+  document.getElementById('hudRank').textContent = mode === 'ranked' ? rankedTierName : '';
+  const isMobile = window.innerWidth < 900 || 'ontouchstart' in window;
+  document.getElementById('mobileControls').style.display = isMobile ? 'block' : 'none';
+  if (mode === 'pvp' && isMobile) document.getElementById('p2pad').style.display = 'block';
+  else document.getElementById('p2pad').style.display = 'none';
+  initGame();
+}
+
+function exitGame() {
+  gameRunning = false;
+  if (animId) cancelAnimationFrame(animId);
+  showScreen('modeScreen');
+  document.getElementById('mobileControls').style.display = 'none';
+}
+
+// ============================================
+//  CANVAS SETUP
+// ============================================
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let CW, CH; // canvas width/height
+
+function resizeCanvas() {
+  const gameScreen = document.getElementById('gameScreen');
+  const hud = document.getElementById('hud');
+  const maxW = Math.min(window.innerWidth, 900);
+  const maxH = window.innerHeight - hud.offsetHeight - 60;
+  const ar = 16 / 9;
+  let w = maxW, h = w / ar;
+  if (h > maxH) { h = maxH; w = h * ar; }
+  canvas.width = Math.floor(w);
+  canvas.height = Math.floor(h);
+  CW = canvas.width; CH = canvas.height;
+}
+
+window.addEventListener('resize', () => { if (gameRunning) { resizeCanvas(); resetPositions(); } });
+
+// ============================================
+//  GAME OBJECTS
+// ============================================
+let p1, p2, ball, goalLeft, goalRight;
+
+function carProto(x, y, color, isAI) {
+  return { x, y, width: 0, height: 0, angle: 0, speed: 0,
+    maxSpeed: 0, acceleration: 0, friction: 0.96, turnSpeed: 0,
+    color, isAI, shadow: color };
+}
+
+function initGame() {
+  resizeCanvas();
+  const sc = CW / 800;
+  p1 = carProto(CW*0.15, CH*0.5, '#3498db', false);
+  p2 = carProto(CW*0.85, CH*0.5, '#e74c3c', gameMode !== 'pvp');
+  [p1, p2].forEach(c => {
+    c.width = 44*sc; c.height = 26*sc;
+    c.maxSpeed = 7*sc; c.acceleration = 0.35*sc; c.turnSpeed = 0.07;
+  });
+  ball = { x: CW/2, y: CH/2, radius: 14*sc, vx: 0, vy: 0, friction: 0.985, bounce: 0.75 };
+  const gw = 18*sc, gh = 120*sc, gy = (CH - gh) / 2;
+  goalLeft  = { x: 0,      y: gy, w: gw, h: gh };
+  goalRight = { x: CW-gw,  y: gy, w: gw, h: gh };
+  p1.score = 0; p2.score = 0;
+  document.getElementById('score1').textContent = 0;
+  document.getElementById('score2').textContent = 0;
+  p1.angle = 0; p2.angle = Math.PI;
+  gameRunning = true;
+  if (animId) cancelAnimationFrame(animId);
+  loop();
+}
+
+function resetPositions() {
+  const sc = CW / 800;
+  p1.x = CW*0.15; p1.y = CH*0.5; p1.angle = 0; p1.speed = 0;
+  p2.x = CW*0.85; p2.y = CH*0.5; p2.angle = Math.PI; p2.speed = 0;
+  ball.x = CW/2; ball.y = CH/2; ball.vx = 0; ball.vy = 0;
+}
+
+// ============================================
+//  INPUT
+// ============================================
+window.addEventListener('keydown', e => { keys[e.key] = true; if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault(); });
+window.addEventListener('keyup', e => keys[e.key] = false);
+
+// Mobile D-pad
+document.querySelectorAll('.dpad-btn').forEach(btn => {
+  const k = btn.dataset.key;
+  btn.addEventListener('touchstart', e => { e.preventDefault(); keys[k] = true; btn.classList.add('pressed'); }, { passive: false });
+  btn.addEventListener('touchend', e => { e.preventDefault(); keys[k] = false; btn.classList.remove('pressed'); }, { passive: false });
+});
+
+// ============================================
+//  AI LOGIC
+// ============================================
+function getAIParams() {
+  const base = {
+    noob:         { speed: 0.2, reaction: 0.015, noise: 1.2, offsideProb: 0.5 },
+    rookie:       { speed: 0.45, reaction: 0.03, noise: 0.7, offsideProb: 0.3 },
+    intermediate: { speed: 0.7, reaction: 0.055, noise: 0.35, offsideProb: 0.1 },
+    pro:          { speed: 0.88, reaction: 0.09, noise: 0.12, offsideProb: 0.02 },
+    unfair:       { speed: 1.0, reaction: 0.18, noise: 0, offsideProb: 0 }
+  };
+  if (gameMode === 'ranked') {
+    const t = Math.min(rankedLevel, 15) / 15;
+    return { speed: 0.2 + 0.8*t, reaction: 0.015 + 0.165*t, noise: 1.2*(1-t), offsideProb: 0.5*(1-t) };
+  }
+  return base[aiDifficulty] || base.intermediate;
+}
+
+function updateAI(ai, ball) {
+  if (!ai.isAI) return;
+  const p = getAIParams();
+  if (Math.random() < p.offsideProb * 0.02) return; // Random inaction
+  ai.maxSpeed = (7 * CW/800) * p.speed;
+  // Target: go behind ball to shoot toward left goal (p2 shoots left)
+  let targetX = ball.x + 60 * (CW/800);
+  let targetY = ball.y;
+  if (Math.random() < 0.005) ai._noiseY = (Math.random()-0.5) * CH * 0.4;
+  targetY += (ai._noiseY || 0) * p.noise;
+  let dx = targetX - ai.x, dy = targetY - ai.y;
+  let desired = Math.atan2(dy, dx);
+  let diff = desired - ai.angle;
+  while (diff > Math.PI) diff -= 2*Math.PI;
+  while (diff < -Math.PI) diff += 2*Math.PI;
+  ai.angle += diff * p.reaction;
+  ai.speed += ai.acceleration * p.speed;
+}
+
+// ============================================
+//  PHYSICS UPDATE
+// ============================================
+function moveCar(car, up, down, left, right) {
+  if (keys[up] || keys[up.toLowerCase()]) car.speed += car.acceleration;
+  if (keys[down] || keys[down.toLowerCase()]) car.speed -= car.acceleration;
+  if (keys[left] || keys[left.toLowerCase()]) car.angle -= car.turnSpeed;
+  if (keys[right] || keys[right.toLowerCase()]) car.angle += car.turnSpeed;
+}
+
+function updateCar(car) {
+  car.speed *= car.friction;
+  if (car.speed > car.maxSpeed) car.speed = car.maxSpeed;
+  if (car.speed < -car.maxSpeed/2) car.speed = -car.maxSpeed/2;
+  car.x += Math.cos(car.angle) * car.speed;
+  car.y += Math.sin(car.angle) * car.speed;
+  const hw = car.width/2, hh = car.height/2;
+  car.x = Math.max(hw, Math.min(CW-hw, car.x));
+  car.y = Math.max(hh, Math.min(CH-hh, car.y));
+}
+
+function carBallCollision(car, ball) {
+  let dx = ball.x - car.x, dy = ball.y - car.y;
+  let dist = Math.sqrt(dx*dx+dy*dy);
+  let minDist = ball.radius + Math.max(car.width, car.height)*0.45;
+  if (dist < minDist && dist > 0) {
+    let nx = dx/dist, ny = dy/dist;
+    ball.x = car.x + nx*minDist; ball.y = car.y + ny*minDist;
+    let power = Math.abs(car.speed)*1.4 + 2.5*(CW/800);
+    ball.vx += nx * power; ball.vy += ny * power;
+    car.speed *= 0.55;
+  }
+}
+
+function update() {
+  if (!gameRunning) return;
+  // P1 controls: WASD
+  moveCar(p1, 'W', 'S', 'A', 'D');
+  // P2 controls: Arrow keys (or AI)
+  if (!p2.isAI) moveCar(p2, 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight');
+  else updateAI(p2, ball);
+
+  updateCar(p1); updateCar(p2);
+
+  // Ball physics
+  ball.x += ball.vx; ball.y += ball.vy;
+  ball.vx *= ball.friction; ball.vy *= ball.friction;
+
+  // Ball wall bounce (top/bottom)
+  if (ball.y - ball.radius < 0) { ball.y = ball.radius; ball.vy *= -ball.bounce; }
+  if (ball.y + ball.radius > CH) { ball.y = CH - ball.radius; ball.vy *= -ball.bounce; }
+
+  // Ball vs Left Wall / Left Goal
+  if (ball.x - ball.radius < 0) {
+    if (ball.y > goalLeft.y && ball.y < goalLeft.y + goalLeft.h) {
+      scoreGoal(2); return;
+    } else { ball.x = ball.radius; ball.vx *= -ball.bounce; }
+  }
+  // Ball vs Right Wall / Right Goal
+  if (ball.x + ball.radius > CW) {
+    if (ball.y > goalRight.y && ball.y < goalRight.y + goalRight.h) {
+      scoreGoal(1); return;
+    } else { ball.x = CW - ball.radius; ball.vx *= -ball.bounce; }
+  }
+
+  carBallCollision(p1, ball);
+  carBallCollision(p2, ball);
+}
+
+// ============================================
+//  GOAL SCORING
+// ============================================
+function scoreGoal(playerNum) {
+  gameRunning = false;
+  if (playerNum === 1) { p1.score++; document.getElementById('score1').textContent = p1.score; }
+  else { p2.score++; document.getElementById('score2').textContent = p2.score; }
+  stats.goals++;
+
+  const overlay = document.getElementById('goalOverlay');
+  document.getElementById('goalText').textContent = 'GOAL!';
+  document.getElementById('goalScorer').textContent = playerNum === 1 ? '🔵 Player 1 Scores!' : (gameMode === 'pvp' ? '🔴 Player 2 Scores!' : '🔴 AI Scores!');
+  overlay.classList.add('show');
+
+  if (goalTimeout) clearTimeout(goalTimeout);
+  goalTimeout = setTimeout(() => {
+    overlay.classList.remove('show');
+    resizeCanvas();
+    resetPositions();
+    gameRunning = true;
+    loop();
+  }, 2200);
+}
+
+// ============================================
+//  DRAWING
+// ============================================
+function draw() {
+  ctx.clearRect(0, 0, CW, CH);
+  drawField();
+  drawGoal(goalLeft, '#e74c3c');  // Left goal = red (P2 attacks this)
+  drawGoal(goalRight, '#3498db'); // Right goal = blue (P1 attacks this)
+  drawBall();
+  drawCar(p1, '#3498db', '#1a6fa8');
+  drawCar(p2, '#e74c3c', '#a82c1a');
+}
+
+function drawField() {
+  const sc = CW / 800;
+  // Grass stripes
+  for (let i = 0; i < 8; i++) {
+    ctx.fillStyle = i % 2 === 0 ? '#1a5c24' : '#1e6628';
+    ctx.fillRect(i * CW/8, 0, CW/8, CH);
+  }
+  // White lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.lineWidth = 2*sc;
+  // Halfway line
+  ctx.beginPath();
+  ctx.moveTo(CW/2, 0); ctx.lineTo(CW/2, CH);
+  ctx.stroke();
+  // Center circle
+  ctx.beginPath();
+  ctx.arc(CW/2, CH/2, 60*sc, 0, Math.PI*2);
+  ctx.stroke();
+  // Center dot
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.beginPath(); ctx.arc(CW/2, CH/2, 4*sc, 0, Math.PI*2); ctx.fill();
+  // Corner arcs
+  ctx.beginPath(); ctx.arc(0,0, 20*sc, 0, Math.PI/2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(CW,0, 20*sc, Math.PI/2, Math.PI); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0,CH, 20*sc, -Math.PI/2, 0); ctx.stroke();
+  ctx.beginPath(); ctx.arc(CW,CH, 20*sc, Math.PI, -Math.PI/2); ctx.stroke();
+  // Penalty boxes
+  const pbw = 80*sc, pbh = 180*sc, pby = (CH-pbh)/2;
+  ctx.strokeRect(0, pby, pbw, pbh);
+  ctx.strokeRect(CW-pbw, pby, pbw, pbh);
+}
+
+function drawGoal(g, color) {
+  ctx.fillStyle = color + '55';
+  ctx.fillRect(g.x, g.y, g.w, g.h);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(g.x, g.y, g.w, g.h);
+  // Neon glow effect
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 15;
+  ctx.strokeRect(g.x, g.y, g.w, g.h);
+  ctx.shadowBlur = 0;
+}
+
+function drawBall() {
+  const sc = CW/800;
+  // Shadow
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(ball.x, ball.y + ball.radius*0.6, ball.radius*0.9, ball.radius*0.3, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+  // Ball body
+  const grad = ctx.createRadialGradient(ball.x-ball.radius*0.3, ball.y-ball.radius*0.3, 1, ball.x, ball.y, ball.radius);
+  grad.addColorStop(0, '#ffffff');
+  grad.addColorStop(0.6, '#cccccc');
+  grad.addColorStop(1, '#888888');
+  ctx.fillStyle = grad;
+  ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2); ctx.fill();
+  // Pentagon pattern
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.radius*0.3, 0, Math.PI*2); ctx.fill();
+  // Shine
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.beginPath(); ctx.arc(ball.x-ball.radius*0.28, ball.y-ball.radius*0.3, ball.radius*0.2, 0, Math.PI*2); ctx.fill();
+}
+
+function drawCar(car, mainColor, darkColor) {
+  const sc = CW/800;
+  ctx.save();
+  ctx.translate(car.x, car.y);
+  ctx.rotate(car.angle);
+  const w = car.width, h = car.height;
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(2*sc, 4*sc, w*0.5, h*0.28, 0, 0, Math.PI*2);
+  ctx.fill();
+  // Car body
+  const bodyGrad = ctx.createLinearGradient(-w/2,-h/2,w/2,h/2);
+  bodyGrad.addColorStop(0, lightenColor(mainColor, 30));
+  bodyGrad.addColorStop(0.5, mainColor);
+  bodyGrad.addColorStop(1, darkColor);
+  ctx.fillStyle = bodyGrad;
+  roundRect(ctx, -w/2, -h/2, w, h, 5*sc);
+  ctx.fill();
+  // Car roof / cockpit
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  roundRect(ctx, -w*0.15, -h/2+2*sc, w*0.4, h*0.55, 3*sc);
+  ctx.fill();
+  // Windshield glow
+  ctx.fillStyle = 'rgba(0,245,255,0.35)';
+  roundRect(ctx, -w*0.12, -h/2+3*sc, w*0.34, h*0.4, 2*sc);
+  ctx.fill();
+  // Wheels
+  ctx.fillStyle = '#222';
+  const wx = w*0.38, wy = h*0.45, ww = w*0.2, wh = h*0.28;
+  ctx.fillRect( wx-ww/2, -wy-wh/2, ww, wh); // front top
+  ctx.fillRect( wx-ww/2,  wy-wh/2, ww, wh); // front bot
+  ctx.fillRect(-wx-ww/2, -wy-wh/2, ww, wh); // rear top
+  ctx.fillRect(-wx-ww/2,  wy-wh/2, ww, wh); // rear bot
+  // Headlights
+  ctx.shadowColor = '#ffff88';
+  ctx.shadowBlur = 10*sc;
+  ctx.fillStyle = '#ffff88';
+  ctx.fillRect(w/2-5*sc, -h/3, 5*sc, h*0.25);
+  ctx.fillRect(w/2-5*sc,  h/12, 5*sc, h*0.25);
+  ctx.shadowBlur = 0;
+  // Taillights
+  ctx.fillStyle = '#ff4444';
+  ctx.fillRect(-w/2, -h/3, 4*sc, h*0.25);
+  ctx.fillRect(-w/2,  h/12, 4*sc, h*0.25);
+  ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+function lightenColor(hex, amt) {
+  const num = parseInt(hex.replace('#',''), 16);
+  const r = Math.min(255, (num>>16)+amt);
+  const g = Math.min(255, ((num>>8)&0xff)+amt);
+  const b = Math.min(255, (num&0xff)+amt);
+  return `rgb(${r},${g},${b})`;
+}
+
+// ============================================
+//  GAME LOOP
+// ============================================
+function loop() {
+  if (!gameRunning) return;
+  update(); draw();
+  animId = requestAnimationFrame(loop);
+}
+
+// ============================================
+//  SAVE SYSTEM
+// ============================================
+function toggleSavePanel() {
+  document.getElementById('savePanel').classList.toggle('open');
+}
+function generateSave() {
+  const code = btoa(JSON.stringify(stats));
+  document.getElementById('saveCode').value = code;
+  alert('Save code generated! Copy it and keep it safe.');
+}
+function loadSave() {
+  try {
+    stats = JSON.parse(atob(document.getElementById('saveCode').value));
+    updateMenuScore();
+    alert('Progress loaded!');
+  } catch(e) { alert('Invalid save code.'); }
+}
+</script>
+</body>
+</html>
